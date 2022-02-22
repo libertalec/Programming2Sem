@@ -1,0 +1,671 @@
+#include <iostream>
+#include <iomanip>
+#include <cmath>
+#include <vector>
+#include <algorithm>
+#include <string>
+
+class CPoint {
+private:
+    double x_;
+    double y_;
+public:
+    CPoint(double x = 0, double y = 0) : x_(x), y_(y) {
+
+    }
+
+    CPoint(const CPoint &other) : x_(other.x_), y_(other.y_) {
+
+    }
+
+    CPoint &operator=(const CPoint &other) {
+        x_ = other.x_;
+        y_ = other.y_;
+    }
+
+    CPoint operator+(CPoint const &other) const { return CPoint(x_ + other.x_, y_ + other.y_); }
+
+    CPoint operator*(double c) const { return CPoint(x_ * c, y_ * c); }
+
+    void setX(double x) {
+        x_ = x;
+    }
+
+    void setY(double y) {
+        y_ = y;
+    }
+
+    double getX() {
+        return x_;
+    }
+
+    double getY() {
+        return y_;
+    }
+
+    ~CPoint() {}
+};
+
+
+class CPolyline {
+protected:
+    int number_vertices_;
+    std::vector<CPoint> vertexes;
+    double length_edge = 0;
+    std::vector<double> edges;
+
+public:
+
+    CPolyline(int number_vertices = 0) : number_vertices_(number_vertices) {
+
+        vertexes = std::vector<CPoint>(number_vertices_, CPoint());
+        double x, y;
+
+        for (int i = 0; i < number_vertices_; i++) {
+            std::cin >> x >> y;
+            vertexes[i].setX(x);
+            vertexes[i].setY(y);
+        }
+        edges = std::vector<double>(number_vertices_ - 1);
+    }
+
+
+    CPolyline(const CPolyline &other) : number_vertices_(other.number_vertices_) {
+        vertexes = std::vector<CPoint>(number_vertices_, CPoint());
+
+        for (int i = 0; i < other.number_vertices_; i++) {
+            vertexes[i] = other.vertexes[i];
+        }
+        edges = std::vector<double>(other.edges.size());
+
+        for (int i = 0; i < edges.size(); i++) {
+            edges[i] = other.edges[i];
+        }
+        length_edge = other.length_edge;
+
+
+    }
+
+    CPolyline &operator=(const CPolyline &other) {
+
+        number_vertices_ = other.number_vertices_;
+
+        vertexes.resize(number_vertices_);
+
+        for (int i = 0; i < number_vertices_; i++) {
+            vertexes[i] = other.vertexes[i];
+        }
+
+        edges.resize(number_vertices_);
+
+        for (int i = 0; i < edges.size(); i++) {
+            edges[i] = other.edges[i];
+        }
+
+        length_edge = other.length_edge;
+
+
+    }
+
+    virtual void polyline_length() {
+
+        for (int i = 0; i < number_vertices_ - 1; i++) {
+
+            double x_a, y_a, x_b, y_b;
+            x_a = vertexes[i].getX();
+            y_a = vertexes[i].getY();
+            x_b = vertexes[i + 1].getX();
+            y_b = vertexes[i + 1].getY();
+
+            length_edge = std::sqrt((x_b - x_a) * (x_b - x_a) + (y_b - y_a) * (y_b - y_a));
+
+            edges[i] = length_edge;
+        }
+        length_edge = 0;
+        for (int i = 0; i < edges.size(); i++) {
+            length_edge += edges[i];
+        }
+        std::cout << length_edge << std::endl;
+
+
+    }
+
+    ~CPolyline() {}
+};
+
+class CClosed_polyline : public CPolyline {
+protected:
+    bool check = false;
+    double square_CPolyline = 0;
+
+    virtual void square_ClosedPolyline() {
+        double x, y;
+        double expression1 = 0;
+        double expression2 = 0;
+
+        for (int i = 0; i < number_vertices_ - 1; i++) {
+            x = vertexes[i].getX();
+            y = vertexes[i + 1].getY();
+            expression1 += x * y;
+        }
+        x = vertexes[number_vertices_ - 1].getX();
+        y = vertexes[0].getY();
+        expression1 += x * y;
+
+        for (int i = 0; i < number_vertices_ - 1; i++) {
+            x = vertexes[i + 1].getX();
+            y = vertexes[i].getY();
+            expression2 -= x * y;
+        }
+        x = vertexes[0].getX();
+        y = vertexes[number_vertices_ - 1].getY();
+        expression2 -= x * y;
+        square_CPolyline = 0.5 * (abs(expression1 - abs(expression2)));
+    }
+
+    bool static comp(CPoint a, CPoint b) {
+        return a.getX() < b.getX();
+    }
+
+    double a_x1, a_y1, a_x2, a_y2;
+    std::string answer = "-";
+    int score;
+
+
+    void intersection(double x1, double y1, double x2, double y2, double x3, double y3,
+                      double x4, double y4) {
+        std::vector<CPoint> p(4);
+        p[0] = CPoint(x1, y1);
+        p[1] = CPoint(x2, y2);
+        p[2] = CPoint(x3, y3);
+        p[3] = CPoint(x4, y4);
+        sort(p.begin(), p.end(), comp);
+
+
+        double X, Y, Z;
+
+        X = ((x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4));
+        Y = ((x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4));
+        Z = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        if (Z == 0) {
+            if (X == 0 && Y == 0) {
+// cout << -1;//здесь нужно проверить пересекаются ли отрезки
+                if ((std::min(x1, x2) <= x3 && x3 <= std::max(x1, x2) ||
+                     std::min(x1, x2) <= x4 && x4 <= std::max(x1, x2) ||
+                     std::min(x3, x4) <= x1 && x1 <= std::max(x3, x4) ||
+                     std::min(x3, x4) <= x2 && x2 <= std::max(x3, x4))) {
+                    if (p[1].getX() == p[2].getX() && p[1].getY() == p[2].getY()) {
+                        a_x1 = p[1].getX();
+                        a_y1 = p[1].getY();
+                        score = 2;
+
+                    } else {
+                        a_x1 = p[1].getX();
+                        a_y1 = p[1].getY();
+                        a_x2 = p[2].getX();
+                        a_y2 = p[2].getY();
+                        score = 4;
+                    }
+                } else {
+                    answer = "Empty";
+                }
+            } else {
+                answer = "Empty";
+            }
+        } else {
+            if ((x1 * Z <= X && X <= x2 * Z || x2 * Z <= X && X <= x1 * Z)
+                && (y1 * Z <= Y && Y <= y2 * Z ||
+                    y2 * Z <= Y && Y <= y1 * Z)) {
+                a_x1 = (double) X / Z;
+                a_y1 = (double) Y / Z;
+                score = 2;
+            } else {
+                answer = "Empty";
+            }
+
+        }
+
+    }
+
+    void polyline_length() override {
+        double x_a, y_a, x_b, y_b;
+        edges = std::vector<double>(number_vertices_);
+        for (int i = 0; i < number_vertices_; i++) {
+            if (i + 1 > number_vertices_) {
+                x_a = vertexes[0].getX();
+                y_a = vertexes[0].getY();
+                x_b = vertexes[i].getX();
+                y_b = vertexes[i].getY();
+
+                length_edge = std::sqrt((x_b - x_a) * (x_b - x_a) + (y_b - y_a) * (y_b - y_a));
+
+                edges[i] = length_edge;
+            } else {
+                x_a = vertexes[i].getX();
+                y_a = vertexes[i].getY();
+                x_b = vertexes[i + 1].getX();
+                y_b = vertexes[i + 1].getY();
+
+                length_edge = std::sqrt((x_b - x_a) * (x_b - x_a) + (y_b - y_a) * (y_b - y_a));
+
+                edges[i] = length_edge;
+            }
+
+
+        }
+        length_edge = 0;
+        for (int i = 0; i < edges.size(); i++) {
+            length_edge += edges[i];
+        }
+    }
+
+public:
+    CClosed_polyline(int number_vertices = 0) : CPolyline(number_vertices) {
+
+        number_vertices_ = number_vertices;
+        edges = std::vector<double>(number_vertices_);
+
+        if (number_vertices_ <= 2) {
+            std::cout << "There must be at least 3 points in a closed polyline" << std::endl;
+            throw -1;
+        }
+
+        for (int i = 0; i < edges.size(); i++) {
+            if (check) {
+                break;
+            }
+            for (int z = 0; z < edges.size() - 1; z++) {
+                if (z + 1 < number_vertices_ && i + 1 < number_vertices_) {
+                    intersection(vertexes[i].getX(), vertexes[i].getY(), vertexes[i + 1].getX(), vertexes[i + 1].getY(),
+                                 vertexes[z].getX(), vertexes[z].getY(), vertexes[z + 1].getX(),
+                                 vertexes[z + 1].getY());
+
+                    if (answer == "Empty") {
+                        check = false;
+                        answer = "-";
+                        break;
+
+                    } else {
+                        if (score == 2) {
+                            if ((a_x1 == vertexes[i].getX() && a_y1 == vertexes[i].getY()) ||
+                                (a_x1 == vertexes[i + 1].getX() && a_y1 == vertexes[i + 1].getY())) {
+                                check = false;
+                            } else {
+                                check = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                score = 0;
+
+            }
+        }
+
+        polyline_length();
+        square_ClosedPolyline();
+
+    }
+
+    CClosed_polyline(const CPolyline &other) : CPolyline(other) {
+        if (number_vertices_ <= 2) {
+            std::cout << "There must be at least 3 points in a closed polyline" << std::endl;
+            throw -1;
+        }
+
+
+    }
+
+    CClosed_polyline &operator=(const CPolyline &other) {
+        CPolyline::operator=(other);
+
+    }
+
+    void perimeter() {
+        std::cout << length_edge << std::endl;
+    }
+
+    virtual void square_() {
+        std::cout << square_CPolyline << std::endl;
+    }
+
+    ~CClosed_polyline() {}
+};
+
+
+class CPolygon : public CClosed_polyline {
+public:
+    CPolygon(int number_vertices = 0) : CClosed_polyline(number_vertices) {
+        number_vertices_ = number_vertices;
+        if (number_vertices_ <= 2) {
+            std::cout << "There must be at least 3 points in a closed polyline" << std::endl;
+            throw -1;
+        }
+
+        if (check) {
+            std::cout << "The figure should not be self-intersected" << std::endl;
+            throw -1;
+        }
+
+    }
+
+    CPolygon(const CPolyline &other) : CClosed_polyline(other) {
+        if (number_vertices_ <= 2) {
+            std::cout << "There must be at least 3 points in a closed polyline" << std::endl;
+            throw -1;
+        }
+    }
+
+    CPolygon &operator=(const CClosed_polyline &other) {
+        CClosed_polyline::operator=(other);
+
+    }
+
+    ~CPolygon() {}
+};
+
+
+class CTriangle : public CPolygon {
+private:
+    double half_meter;
+    double area_triangle;
+
+    void square_ClosedPolyline() override {
+
+        half_meter = 0.5 * length_edge;
+
+        double a = half_meter - edges[0];
+        double b = half_meter - edges[1];
+        double c = half_meter - edges[2];
+
+        area_triangle = sqrt(half_meter * (a) * (b) * (c));
+    }
+
+public:
+    CTriangle(int number_vertices = 0) : CPolygon(number_vertices) {
+        number_vertices_ = number_vertices;
+        if (number_vertices_ != 3) {
+            std::cout << "There should be exactly 3 vertices in the triangle" << std::endl;
+            throw -1;
+        }
+        square_ClosedPolyline();
+
+    }
+
+    CTriangle(const CPolygon &other) : CPolygon(other) {
+        if (number_vertices_ != 3) {
+            std::cout << "There should be exactly 3 vertices in the triangle" << std::endl;
+            throw -1;
+        }
+    }
+
+    CTriangle &operator=(const CPolygon &other) {
+        CPolygon::operator=(other);
+
+    }
+
+
+    void radius_described() {
+        half_meter = 0.5 * length_edge;
+
+        double a = half_meter - edges[0];
+        double b = half_meter - edges[1];
+        double c = half_meter - edges[2];
+
+        area_triangle = sqrt(half_meter * (a) * (b) * (c));
+
+        double radius;
+        radius = (edges[0] * edges[1] * edges[2]) / (4 * area_triangle);
+        std::cout << radius << std::endl;
+    }
+
+    void radius_inscribed() {
+        half_meter = 0.5 * length_edge;
+
+        double a = half_meter - edges[0];
+        double b = half_meter - edges[1];
+        double c = half_meter - edges[2];
+
+        area_triangle = sqrt(half_meter * (a) * (b) * (c));
+
+        double radius;
+        radius = area_triangle / half_meter;
+        std::cout << radius << std::endl;
+    }
+
+    void square_() override {
+        std::cout << area_triangle << std::endl;
+    }
+    ~CTriangle(){};
+
+};
+
+class CTrapezoid : public CPolygon {
+private:
+    std::vector<double> k;
+    bool basis = false;
+    bool edge = false;
+    double coefficient;
+
+    void checking_parallelism() {
+        double x_a, y_a, x_b, y_b;
+        k = std::vector<double>(number_vertices_);
+        for (int i = 0; i < number_vertices_; i++) {
+            if (i + 1 == number_vertices_) {
+                x_a = vertexes[0].getX();
+                y_a = vertexes[0].getY();
+                x_b = vertexes[i].getX();
+                y_b = vertexes[i].getY();
+                if (x_a - x_b == 0) {
+                    basis = false;
+                    edge = false;
+                    break;
+                }
+
+                coefficient = (y_b - y_a) / (x_b - x_a);
+
+                k[i] = coefficient;
+            } else {
+                x_a = vertexes[i].getX();
+                y_a = vertexes[i].getY();
+                x_b = vertexes[i + 1].getX();
+                y_b = vertexes[i + 1].getY();
+                if (x_a - x_b == 0) {
+                    basis = false;
+                    edge = false;
+                    break;
+                }
+
+                coefficient = (y_b - y_a) / (x_b - x_a);
+
+                k[i] = coefficient;
+            }
+
+
+        }
+    }
+
+public:
+    CTrapezoid(int number_vertices = 0) : CPolygon(number_vertices) {
+        number_vertices_ = number_vertices;
+        if (number_vertices_ != 4) {
+            std::cout << "There should be 4 vertices in the trapezoid" << std::endl;
+            throw -1;
+        }
+
+        checking_parallelism();
+        if ((k[0] == k[2] && k[1] != k[3]) || (k[0] != k[2] && k[1] == k[3])) {
+
+        } else {
+            std::cout << "There should be two parallel edges in the trapezoid" << std::endl;
+            throw -1;
+        }
+
+    }
+
+
+    CTrapezoid(const CPolygon &other) : CPolygon(other) {
+        if (number_vertices_ != 4) {
+            std::cout << "There should be 4 vertices in the trapezoid" << std::endl;
+            throw -1;
+        }
+    }
+
+    CTrapezoid &operator=(const CPolygon &other) {
+        CPolygon::operator=(other);
+
+    }
+
+    void height() {
+        square_ClosedPolyline();
+        polyline_length();
+
+        double h;
+        if (k[0] == k[2] && k[1] != k[3]) {
+            h = square_CPolyline / ((edges[0] + edges[2]) / 2);
+        } else if (k[0] != k[2] && k[1] == k[3]) {
+            h = square_CPolyline / ((edges[1] + edges[3]) / 2);
+        }
+
+        std::cout << h << std::endl;
+    }
+    ~CTrapezoid(){}
+};
+
+class CRegular_polygon : public CPolygon {
+private:
+    double pi = 3.1415926535;
+    std::vector<double> angle;
+
+    void cosine(CPoint f_vec1, CPoint general, CPoint f_vec2, int pos) {
+        double vector1_x;
+        double vector1_y;
+        double vector2_x;
+        double vector2_y;
+
+        double scalar;
+        double cosin;
+
+        double length_vec1;
+        double length_vec2;
+
+        vector1_x = f_vec1.getX() - general.getX();
+        vector1_y = f_vec1.getY() - general.getY();
+
+        vector2_x = f_vec2.getX() - general.getX();
+        vector2_y = f_vec2.getY() - general.getY();
+
+        length_vec1 = sqrt((vector1_x * vector1_x) + (vector1_y * vector1_y));
+        length_vec2 = sqrt((vector2_x * vector2_x) + (vector2_y * vector2_y));
+
+        scalar = vector1_x * vector2_x + vector1_y * vector2_y;
+
+        cosin = (scalar) / (length_vec1 * length_vec2);
+        angle[pos] = std::abs(cosin);
+
+
+    }
+
+public:
+    CRegular_polygon(int number_vertices = 0) : CPolygon(number_vertices) {
+        number_vertices_ = number_vertices;
+        angle = std::vector<double>(number_vertices_);
+        bool ang = false;
+        if (number_vertices_ <= 2) {
+            std::cout << "There must be at least 3 points in a closed polyline" << std::endl;
+            throw -1;
+        }
+        if (check) {
+            std::cout << "The figure should not be self-intersected" << std::endl;
+            throw -1;
+        }
+
+        for (int i = 0; i < number_vertices_; i++) {
+            if (i + 2 < number_vertices_) {
+                cosine(vertexes[i], vertexes[i + 1], vertexes[i + 2], i);
+            }
+        }
+        for (int i = number_vertices_ - 1; i > 0; i--) {
+            if (i - 2 > 0) {
+                cosine(vertexes[i], vertexes[i - 1], vertexes[i - 2], i);
+            }
+        }
+        cosine(vertexes[number_vertices_ - 1], vertexes[0], vertexes[1], number_vertices_ - 1);
+
+        for (int i = 0; i < number_vertices_; i++) {
+            if (std::abs(angle[0] - angle[i]) <= 0.001) {
+                ang = true;
+            } else {
+                ang = false;
+                break;
+            }
+        }
+        if (!ang) {
+            std::cout << "The angles should be the same" << std::endl;
+            throw -1;
+        }
+
+    }
+
+    CRegular_polygon(const CPolyline &other) : CPolygon(other) {
+        if (number_vertices_ <= 2) {
+            std::cout << "There must be at least 3 points in a closed polyline" << std::endl;
+            throw -1;
+        }
+    }
+
+    CRegular_polygon &operator=(const CPolygon &other) {
+        CPolygon::operator=(other);
+
+    }
+
+
+    void radius_described() {
+        double r;
+        double denominator;
+
+        denominator = 2 * tan(pi / number_vertices_);
+        r = (edges[0]) / (denominator);
+        std::cout << r << std::endl;
+    }
+
+    void radius_inscribed() {
+        double r;
+        double denominator;
+
+        denominator = 2 * sin(pi / number_vertices_);
+        r = (edges[0]) / (denominator);
+        std::cout << r << std::endl;
+    }
+
+    ~CRegular_polygon(){};
+};
+
+int main() {
+    CRegular_polygon one(5);
+    one.square_();
+    one.radius_described();
+    one.radius_inscribed();
+    one.perimeter();
+
+    CRegular_polygon two(one);
+    two.square_();
+    two.radius_described();
+    two.radius_inscribed();
+    two.perimeter();
+
+    CRegular_polygon three(6);
+    three.square_();
+    three.radius_described();
+    three.radius_inscribed();
+    three.perimeter();
+
+    three = one;
+    three.square_();
+    three.radius_described();
+    three.radius_inscribed();
+    three.perimeter();
+
+    return 0;
+}
